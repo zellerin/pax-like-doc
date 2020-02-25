@@ -9,7 +9,8 @@
 This is used only for exporting.")
 
 (defmacro define-section (name docstring &rest content)
-  "Define a section for documentation. Section contains a documentation string and list of objects in documented interface to the section.
+  "Define a section for documentation. Section contains a documentation
+string and list of objects in documented interface to the section.
 
 The objects are exported as a side effect."
   `(progn (defun ,name () ,docstring nil)
@@ -17,13 +18,37 @@ The objects are exported as a side effect."
 	  (mapcar 'export ',(mapcar #'car content))))
 
 (define-section @pax-like-doc
-  "MGL-PAX style documentation utilities."
+  "MGL-PAX style documentation utilities.
+
+The idea is that apart from package and code, the author defines
+sections that verbally describes some block of functionality and lists
+interface functions and variables. These are also by default exported,
+see below.
+
+The sections are defined by DEFINE-SECTION as a function and can be
+jumped to using standard editor shortcut (=M-.=) from their names.
+
+The place to jump from is the package definition. Standard
+=cl:defpackage= is replaced with =defpackage= that expects section names
+on the input, and passes exported functions from the =define-section= to
+the CL version.
+
+The documentation strings are expected to be more or less org mode
+format. Using poporg-mode (and binding it to =C-\"=) makes it easier both
+to write and to read."
   (define-section)
   (defpackage))
 
 (defmacro defpackage (name &body defs)
-  "Defpackage variant that strips (and stores elsewhere) :sections and
-provides :export section with already exported symbols."
+  "Defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
+- It expects =:sections= option on the input, and stores its value as
+  list of sections that document the package
+- The =:export= option is not expected, and is replaced by the currently
+  known list of already exported symbols from the package, if the
+  package already existed, or left empty otherwise. The idea is that
+  sections define what is exported.
+All other parameters are passed to =cl:defpackage= as is..
+"
   `(progn
      (cl:defpackage ,name
        ,@(remove :sections defs :key 'car)
@@ -41,10 +66,11 @@ provides :export section with already exported symbols."
 - sections refer to functions and other source items
 - function has documentation
 
-*Security note*: The text from docstrings is considered to be already in
-org mode and inserted verbatim. This means that if you run it on some
-package you did not write, have unsafe org mode settings and open it,
-you may get surprises."
+*Security note*: The text from docstrings is considered to be already
+in org mode and inserted verbatim. This means that if you export
+documentation from a package someone else wrote documentation, *and*
+have unsafe org mode settings, *and* open output in the emacs, you may
+get surprises."
   (export-pkg-to-org))
 
 

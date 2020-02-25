@@ -9,4 +9,4 @@
 The primary difference from PAX is that org format is used for the backend.
 The secondary is that this is much smaller.")
 
-  #+nil (:sections @pax-like-doc))
+  #+nil (:sections @pax-like-doc @pax-like-doc-export))
