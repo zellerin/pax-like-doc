@@ -2,9 +2,9 @@
 
 (in-package #:cz.zellerin.doc)
 
-(defvar *package-sections* '(cz.zellerin.doc (@pax-like-doc @pax-like-doc-export))
-  "List of sections in a package. For the doc package it is set
-  manually, elsewhere it should be taken over from the defpackage.
+(defvar *package-sections* '(cz.zellerin.doc (@annotate @export @internal))
+  "List of sections in a package. For the doc package it is set manually,
+elsewhere it should be taken over from the defpackage.
 
 This is used only for exporting.")
 
@@ -17,7 +17,7 @@ The objects are exported as a side effect."
 	  (setf (get ',name 'exports) ',content)
 	  (mapcar 'export ',(mapcar #'car content))))
 
-(define-section @pax-like-doc
+(define-section @annotate
   "MGL-PAX style documentation utilities.
 
 The idea is that apart from package and code, the author defines
@@ -62,7 +62,7 @@ All other parameters are passed to =cl:defpackage= as is..
       (mapcar (lambda (a) (intern (string a) ',name))
 		',(cdr (assoc :sections defs))))))
 
-(define-section @pax-like-doc-export
+(define-section @export
   "Export documentation to org mode. The structure is:
 - package has sections (in org)
 - sections refer to functions and other source items
@@ -106,3 +106,14 @@ PACKAGE-NAME is used in text and as default for the file name."
 			;; we need canonical name below, not provided one
 			(intern (package-name pkg) 'cz.zellerin.doc)))
       (export-section-to-org out (intern (string-upcase sect))))))
+
+(define-section @internal
+  "Entry points possible useful for debugging and maintenance."
+  (*package-sections* variable)
+  (update-readme))
+
+(defun update-readme ()
+  "Update readme file for the package. Intended to be run after
+  sly-mrepl-sync, when both =*package*= and directory are synchronized."
+  (export-pkg-to-org :pkg *package* :file "README.org"
+		     :package-name "doc"))

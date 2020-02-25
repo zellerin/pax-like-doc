@@ -1,11 +1,11 @@
 #+options: toc:t
-* CZ.ZELLERIN.DOC                                           :package:
+* doc                                                       :package:
 Trivial documentation annotations helpers based on MGL-PAX system.
 
 The primary difference from PAX is that org format is used for the backend.
 The secondary is that this is much smaller.
 
-** @PAX-LIKE-DOC                                            :section:
+** @ANNOTATE                                                :section:
 MGL-PAX style documentation utilities.
 
 The idea is that apart from package and code, the author defines
@@ -43,7 +43,7 @@ Defpackage replacement. The format is same as for `cl:defpackage' with two excep
   sections define what is exported.
 All other parameters are passed to =cl:defpackage= as is..
 
-** @PAX-LIKE-DOC-EXPORT                                     :section:
+** @EXPORT                                                  :section:
 Export documentation to org mode. The structure is:
 - package has sections (in org)
 - sections refer to functions and other source items
@@ -63,4 +63,17 @@ Package documentation consists of:
 - Objects referenced in the section definition.
 
 PACKAGE-NAME is used in text and as default for the file name.
+
+** @INTERNAL                                                :section:
+Entry points possible useful for debugging and maintenance.
+
+*** =*PACKAGE-SECTIONS*=                                    :variable:
+List of sections in a package. For the doc package it is set manually,
+elsewhere it should be taken over from the defpackage.
+
+This is used only for exporting.
+
+*** =UPDATE-README=                                         :function:
+Update readme file for the package. Intended to be run after
+  sly-mrepl-sync, when both =*package*= and directory are synchronized.
 
