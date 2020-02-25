@@ -1,0 +1,38 @@
+#+options: toc:t
+* CZ.ZELLERIN.DOC                                           :package:
+Trivial documentation annotations helpers based on MGL-PAX system.
+
+The difference from PAX is that org format is used for the backend.
+
+** @PAX-LIKE-DOC                                            :section:
+MGL-PAX style documentation utilities.
+
+*** =DEFINE-SECTION=                                        :function:
+Define a section for documentation. Section contains a documentation string and list of objects in documented interface to the section.
+
+The objects are exported as a side effect.
+
+*** =DEFPACKAGE=                                            :function:
+Defpackage variant that strips (and stores elsewhere) :sections and
+provides :export section with already exported symbols.
+
+** @PAX-LIKE-DOC-EXPORT                                     :section:
+Export documentation to org mode. The structure is:
+- package has sections (in org)
+- sections refer to functions and other source items
+- function has documentation
+
+*Security note*: The text from docstrings is considered to be already in
+org mode and inserted verbatim. This means that if you run it on some
+package you did not write, have unsafe org mode settings and open it,
+you may get surprises.
+
+*** =EXPORT-PKG-TO-ORG=                                     :function:
+Export package documentation to a file.
+Package documentation consists of:
+- Package documentation string
+- Sections referenced in the package :section definition
+- Objects referenced in the section definition.
+
+PACKAGE-NAME is used in text and as default for the file name.
+
