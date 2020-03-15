@@ -75,11 +75,18 @@ have unsafe org mode settings, *and* open output in the emacs, you may
 get surprises."
   (export-pkg-to-org))
 
-
 (defun export-fn-to-org (out fn &optional (type 'function))
   "Print out function documentation as a level 3 section."
   (format out "*** =~a= ~60t:~(~a~):~%~a~2&" fn type
-	  (documentation fn type)))
+	  (documentation fn type))
+  (when (and (eql type 'type)
+	     (find-class fn))
+    (dolist (slot (sb-mop:compute-slots (find-class fn)))
+      (when (documentation slot t)
+	(format out "~&- ~A :: ~a~%"
+		(sb-mop:slot-definition-name slot)
+		(documentation slot t ))))
+    (format out "~2&")))
 
 (defun export-section-to-org (out fn)
   "Print section and its functions in the org format to the stream."
