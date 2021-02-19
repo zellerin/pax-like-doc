@@ -49,11 +49,13 @@ to write and to read."
   known list of already exported symbols from the package, if the
   package already existed, or left empty otherwise. The idea is that
   sections define what is exported.
+- define-section symbol from the doc package is imported.
 All other parameters are passed to =cl:defpackage= as is..
 "
   `(progn
      (cl:defpackage ,name
        ,@(remove :sections defs :key 'car)
+       (:import-from #:cz.zellerin.doc #:define-section)
        (:export ,@(let (s (p (find-package name)))
 		    (when p (do-external-symbols (v p) (push v s))) s)))
      (setf
@@ -79,13 +81,17 @@ get surprises."
   "Print out function documentation as a level 3 section."
   (format out "*** =~a= ~60t:~(~a~):~%~a~2&" fn type
 	  (documentation fn type))
-  (when (and (eql type 'type)
-	     (find-class fn))
-    (dolist (slot (sb-mop:compute-slots (find-class fn)))
-      (when (documentation slot t)
-	(format out "~&- ~A :: ~a~%"
-		(sb-mop:slot-definition-name slot)
-		(documentation slot t ))))
+  (when (and (eql type 'type))
+    (let ((class (find-class fn)))
+      (when class
+	;; closer-mop: ensure-finalized
+	(unless (sb-mop:class-finalized-p class)
+	  (sb-mop:finalize-inheritance class))
+	(dolist (slot (sb-mop:compute-slots class))
+	  (when (documentation slot t)
+	    (format out "~&- ~A :: ~a~%"
+		    (sb-mop:slot-definition-name slot)
+		    (documentation slot t ))))))
     (format out "~2&")))
 
 (defun export-section-to-org (out fn)
