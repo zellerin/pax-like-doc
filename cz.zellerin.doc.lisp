@@ -55,14 +55,14 @@ All other parameters are passed to =cl:defpackage= as is..
   `(progn
      (cl:defpackage ,name
        ,@(remove :sections defs :key 'car)
-       (:import-from #:cz.zellerin.doc #:define-section)
+       (:import-from #:cz.zellerin.doc #:define-section #:export-classes)
        (:export ,@(let (s (p (find-package name)))
 		    (when p (do-external-symbols (v p) (push v s))) s)))
      (setf
       (getf *package-sections*
 	    ',(intern (string name) 'cz.zellerin.doc))
       (mapcar (lambda (a) (intern (string a) ',name))
-		',(cdr (assoc :sections defs))))))
+	      ',(mapcar #'symbol-name (cdr (assoc :sections defs)))))))
 
 (define-section @export
   "Export documentation to org mode. The structure is:
@@ -72,7 +72,7 @@ All other parameters are passed to =cl:defpackage= as is..
 
 *Security note*: The text from docstrings is considered to be already
 in org mode and inserted verbatim. This means that if you export
-documentation from a package someone else wrote documentation, *and*
+documentation from a package someone else wrote documentation for, *and*
 have unsafe org mode settings, *and* open output in the emacs, you may
 get surprises."
   (export-pkg-to-org))
@@ -119,6 +119,25 @@ PACKAGE-NAME is used in text and as default for the file name."
 			;; we need canonical name below, not provided one
 			(intern (package-name pkg) 'cz.zellerin.doc)))
       (export-section-to-org out (intern (string-upcase sect))))))
+
+(defmacro export-classes ((&rest what) &body body)
+  "Export names of classes, slot accessor functions and optionaly slot names (if WHAT contains :slots)."
+  `(progn
+     (export
+       ',(loop for form in body
+	     when (and (consp form) (eq (car form) 'defclass))
+	       collect (second form)
+	       and append
+	       (loop for slot-def in (fourth form)
+		     for accessor-name = (getf (cdr slot-def) :accessor)
+		     and reader-name = (getf (cdr slot-def) :reader)
+		     and writer-name = (getf (cdr slot-def) :writer)
+
+		     if (member :slots what) collect (car slot-def)
+		     if accessor-name collect it
+		       if reader-name collect it
+			 if writer-name collect it)))
+     ,@body))
 
 (define-section @internal
   "Entry points possible useful for debugging and maintenance."
