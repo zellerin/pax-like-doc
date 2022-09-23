@@ -3,7 +3,8 @@
 
 (cl:defpackage #:cz.zellerin.doc
   (:use #:cl #:lol)
-  (:export  #:defpackage #:define-section #:export-pkg-to-org  #:export-classes)
+  (:export  #:defpackage #:define-section #:export-pkg-to-org  #:export-classes
+	    #:update-readme #:*package-sections*)
   (:shadow #:defpackage)
   #+nil (:sections @annotate @export)
   (:documentation "Trivial documentation annotations helpers based on MGL-PAX system.

@@ -1,6 +1,9 @@
 ;;;; cz.zellerin.doc.lisp
 
 (in-package #:cz.zellerin.doc)
+#+sbcl
+(eval-when (:compile-toplevel :load-toplevel)
+  (require 'sb-introspect))
 
 (defvar *package-sections* '(cz.zellerin.doc (@annotate @export @internal))
   "List of sections in a package. For the doc package it is set manually,
@@ -13,6 +16,7 @@ This is used only for exporting.")
 string and list of objects in documented interface to the section.
 
 The objects are exported as a side effect."
+  (setq content (mapcar (lambda (a) (if (listp a) a (list a))) content))
   `(progn (defun ,name () ,docstring nil)
 	  (setf (get ',name 'exports) ',content)
 	  (mapcar 'export ',(mapcar #'car content))))
@@ -39,7 +43,8 @@ The documentation strings are expected to be more or less org mode
 format. Using poporg-mode (and binding it to =C-\"=) makes it easier both
 to write and to read."
   (define-section)
-  (defpackage))
+  (defpackage)
+  (generic-fn))
 
 (defmacro defpackage (name &body defs)
   "Defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
@@ -55,14 +60,15 @@ All other parameters are passed to =cl:defpackage= as is..
   `(progn
      (cl:defpackage ,name
        ,@(remove :sections defs :key 'car)
-       (:import-from #:cz.zellerin.doc #:define-section #:export-classes)
+       (:import-from #:cz.zellerin.doc #:define-section #:export-classes
+                     #:generic-fn #:macro #:modify-macro)
        (:export ,@(let (s (p (find-package name)))
 		    (when p (do-external-symbols (v p) (push v s))) s)))
      (setf
       (getf *package-sections*
 	    ',(intern (string name) 'cz.zellerin.doc))
-      (mapcar (lambda (a) (intern (string a) ',name))
-	      ',(mapcar #'symbol-name (cdr (assoc :sections defs)))))))
+      ',(mapcar (lambda (a) (intern (string a) (or (find-package name) (make-package name))))
+		(mapcar #'symbol-name (cdr (assoc :sections defs)))))))
 
 (define-section @export
   "Export documentation to org mode. The structure is:
@@ -79,25 +85,37 @@ get surprises."
 
 (defun export-fn-to-org (out fn &optional (type 'function))
   "Print out function documentation as a level 3 section."
-  (format out "*** =~a= ~60t:~(~a~):~%~a~2&" fn type
-	  (documentation fn type))
-  (when (and (eql type 'type))
-    (let ((class (find-class fn)))
-      (when class
-	;; closer-mop: ensure-finalized
-	(unless (sb-mop:class-finalized-p class)
-	  (sb-mop:finalize-inheritance class))
-	(dolist (slot (sb-mop:compute-slots class))
-	  (when (documentation slot t)
-	    (format out "~&- ~A :: ~a~%"
-		    (sb-mop:slot-definition-name slot)
-		    (documentation slot t ))))))
-    (format out "~2&")))
+  (let ((doc-type ; as accepted by documentation
+          (case type
+            ((class condition) 'type)
+            ((macro generic-fn modify-macro) 'function)
+            (t type))))
+    (format out "- =~a= (~(~a~))~%" fn type)
+    (pprint-logical-block (out nil :per-line-prefix "   ")
+      (format out "~@[~a~&~]" (documentation fn doc-type))
+
+      (when (eql doc-type 'function)
+        (format out "~&~@<Lambda list: ~;~{~~~s~~~^ ~:_~}~:>~%"
+                (sb-introspect:function-lambda-list fn)))
+
+      (when (eql type 'class)
+        (let ((class (find-class fn)))
+          (when class
+            ;; closer-mop: ensure-finalized
+            (unless (sb-mop:class-finalized-p class)
+              (sb-mop:finalize-inheritance class))
+            (format out "~&  Superclasses: ~s~%"
+                    (mapcar #'class-name (sb-mop:class-direct-superclasses class)))
+            (dolist (slot (sb-mop:class-direct-slots class))
+              (when (documentation slot t)
+                (format out "~&- ~A :: ~a~%"
+                        (sb-mop:slot-definition-name slot)
+                        (documentation slot t ))))))))
+    (format out "~&")))
 
 (defun export-section-to-org (out fn)
   "Print section and its functions in the org format to the stream."
-  (format out "** ~a ~60t:section:~%~a~2&" fn
-	  (documentation fn 'function))
+  (format out "~a~2&" (documentation fn 'function))
   (dolist (e (get fn 'exports))
     (apply 'export-fn-to-org out e)))
 
