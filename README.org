@@ -1,79 +1,109 @@
-#+options: toc:t
-* doc                                                       :package:
-Trivial documentation annotations helpers based on MGL-PAX system.
+* Documenting Lisp code for easier reading
+MGL-PAX style documentation utilities, with these differencies:
+- Sly, not Slime
+- Don't export, update dynamic blocks
+- Org mode, not Markdown.
 
-The primary difference from PAX is that org format is used for the backend.
-The secondary is that this is much smaller.
 
-** @ANNOTATE                                                :section:
-MGL-PAX style documentation utilities.
+** Writing documentation
+ #+BEGIN: lisp-fns-doc :package cz.zellerin.doc :section cz.zellerin.doc::@annotate
+ The idea is that apart from package and code, the author defines
+ sections that verbally describes some block of functionality and lists
+ interface functions and variables. These are also by default exported,
+ see below.
 
-The idea is that apart from package and code, the author defines
-sections that verbally describes some block of functionality and lists
-interface functions and variables. These are also by default exported,
-see below.
+ The sections are defined by DEFINE-SECTION as a function and can be
+ jumped to using standard editor shortcut (=M-.=) from their names.
 
-The sections are defined by DEFINE-SECTION as a function and can be
-jumped to using standard editor shortcut (=M-.=) from their names.
+ The place to jump from is the package definition. Standard =cl:defpackage= is
+ replaced with =defpackage= that passes exported functions from the =define-section=
+ to the CL version.
 
-The place to jump from is the package definition. Standard
-=cl:defpackage= is replaced with =defpackage= that expects section
-names on the input, and passes exported functions from the
-=define-section= to the CL version. Elisp function
-`sly-edit-current-package' is provided to jump to the package
-definition.
+ The documentation strings are expected to be more or less org mode
+ format. Using poporg-mode (and binding it to =C-"=) makes it easier both
+ to write and to read.
 
-The documentation strings are expected to be more or less org mode
-format. Using poporg-mode (and binding it to =C-"=) makes it easier both
-to write and to read.
+ - =DEFINE-SECTION= (function)
+    Define a section for documentation. Section contains a documentation
+    string and list of objects in documented interface to the section.
 
-*** =DEFINE-SECTION=                                        :function:
-Define a section for documentation. Section contains a documentation
-string and list of objects in documented interface to the section.
+    The objects are exported as a side effect.
 
-The objects are exported as a side effect.
+    Lambda list: ~NAME~ ~DOCSTRING~ ~&REST~ ~CONTENT~
 
-*** =DEFPACKAGE=                                            :function:
-Defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
-- It expects =:sections= option on the input, and stores its value as
-  list of sections that document the package
-- The =:export= option is not expected, and is replaced by the currently
-  known list of already exported symbols from the package, if the
-  package already existed, or left empty otherwise. The idea is that
-  sections define what is exported.
-All other parameters are passed to =cl:defpackage= as is..
+ - =DEFPACKAGE= (function)
+    Defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
+    - It expects =:sections= option on the input, and stores its value as
+      list of sections that document the package
+    - The =:export= option is not expected, and is replaced by the currently
+      known list of already exported symbols from the package, if the
+      package already existed, or left empty otherwise. The idea is that
+      sections define what is exported.
+    - define-section symbol from the doc package is imported.
+    All other parameters are passed to =cl:defpackage= as is.
 
-** @EXPORT                                                  :section:
-Export documentation to org mode. The structure is:
-- package has sections (in org)
-- sections refer to functions and other source items
-- function has documentation
+    Lambda list: ~NAME~ ~&BODY~ ~DEFS~
 
-*Security note*: The text from docstrings is considered to be already
-in org mode and inserted verbatim. This means that if you export
-documentation from a package someone else wrote documentation, *and*
-have unsafe org mode settings, *and* open output in the emacs, you may
-get surprises.
 
-*** =EXPORT-PKG-TO-ORG=                                     :function:
-Export package documentation to a file.
-Package documentation consists of:
-- Package documentation string
-- Sections referenced in the package :section definition
-- Objects referenced in the section definition.
+ #+END:
 
-PACKAGE-NAME is used in text and as default for the file name.
+** Using documentation in Emacs
 
-** @INTERNAL                                                :section:
-Entry points possible useful for debugging and maintenance.
+   Documentation can be used in the org mode. The supported setup is that package
+ sections can be referred to in the org mode as [[info:org#Dynamic Blocks][dynamic blocks]]; they are normally
+ inserted by `C-x C-x x lisp-doc` and updated by C-c C-x C-u.
 
-*** =*PACKAGE-SECTIONS*=                                    :variable:
-List of sections in a package. For the doc package it is set manually,
-elsewhere it should be taken over from the defpackage.
+ The dynamic block inserts section documentation, and then documentation to the
+ inserted objects.
 
-This is used only for exporting.
+ *Security note*: The text from docstrings is considered to be already in org mode
+ and inserted verbatim. This means that if you export documentation from a
+ package someone else wrote documentation for, *and* have unsafe org mode settings,
+ *and* open output in the emacs, you may get surprises.
 
-*** =UPDATE-README=                                         :function:
-Update readme file for the package. Intended to be run after
-  sly-mrepl-sync, when both =*package*= and directory are synchronized.
+ #+BEGIN: elisp-fns-doc :fns (sly-edit-section )
+ - [[help:sly-edit-section][sly-edit-section]] :: =cmd=  Jump to SECTION definition. If called interactively, the
+   sections in current Sly package are offered for completition.
 
+ #+END:
+
+Actually, Dynamic Blocks interface is provided also for Emacs functions, with just list of functions to document.
+
+** Internals
+ #+BEGIN: lisp-fns-doc :package cz.zellerin.doc :section cz.zellerin.doc::@export-internal
+ The interface to Emacs lisp is EXPORT-SECTION-TO-ORG (lisp function) that is
+ called from ORG-DBLOCK-WRITE:LISP-FNS-DOC (emacs function) using
+ Sly (replacement with Slime should be trivial)
+
+ The conversion to org is done with EXPORT-ITEM-TO-ORG that can be enhanced to
+ handle additional types; currently supported are: function (implicit), variable,
+ type, class, condition, generic-fn and macro. The first few are symbols in CL
+ package; the last two aresymbols in this package and are imported
+ them implicitly in modified DEFPACKAGE.
+
+
+ The conversion to org is done with EXPORT-ITEM-TO-ORG that can be enhanced.
+
+ - =EXPORT-ITEM-TO-ORG= (function)
+    Print out item of type TYPE documentation as a list item.
+
+    In general, the docstring (either explicitly provided or from DOCUMENTATION) is
+    printed; for specific types, additional information such as lambda parameters
+    list (for functions) or slot and parents info (for classes) is provided
+
+    Lambda list: ~OUT~ ~FN~ ~&OPTIONAL~ ~(TYPE 'FUNCTION)~ ~DOCSTRING~
+
+ - =EXPORT-SECTION-TO-ORG= (function)
+    Print section and its functions in the org format to the stream.
+
+    Lambda list: ~OUT~ ~FN~
+
+
+ #+END:
+
+*** Emacs interface
+ #+BEGIN: elisp-fns-doc :fns (org-dblock-write:lisp-fns-doc org-dblock-create-lisp-block)
+ - [[help:org-dblock-write:lisp-fns-doc][org-dblock-write:lisp-fns-doc]] :: =fn=  Update dynamic block at point with Lisp section documentation.
+ - [[help:org-dblock-create-lisp-block][org-dblock-create-lisp-block]] :: =cmd=  Create a dblock documenting a function.
+
+ #+END:

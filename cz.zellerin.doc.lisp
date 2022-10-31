@@ -24,10 +24,10 @@ The objects are exported as a side effect."
 (define-section @annotate
   "MGL-PAX style documentation utilities.
 
-The idea is that apart from package and code, the author defines
-sections that verbally describes some block of functionality and lists
-interface functions and variables. These are also by default exported,
-see below.
+The idea is that apart from package and code, the author defines sections that
+verbally describes some block of functionality and lists interface functions,
+variables and other stuff (``items''). These are also by default exported, see
+below.
 
 The sections are defined by DEFINE-SECTION as a function and can be
 jumped to using standard editor shortcut (=M-.=) from their names.
@@ -43,20 +43,16 @@ The documentation strings are expected to be more or less org mode
 format. Using poporg-mode (and binding it to =C-\"=) makes it easier both
 to write and to read."
   (define-section)
-  (defpackage)
-  (generic-fn))
+  (defpackage))
 
 (defmacro defpackage (name &body defs)
-  "Defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
-- It expects =:sections= option on the input, and stores its value as
-  list of sections that document the package
+  "CL:defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
 - The =:export= option is not expected, and is replaced by the currently
   known list of already exported symbols from the package, if the
   package already existed, or left empty otherwise. The idea is that
   sections define what is exported.
-- define-section symbol from the doc package is imported.
-All other parameters are passed to =cl:defpackage= as is..
-"
+- define-section and related symbol from the doc package are imported.
+All other parameters are passed to =cl:defpackage= as is."
   `(progn
      (cl:defpackage ,name
        ,@(remove :sections defs :key 'car)
@@ -70,21 +66,28 @@ All other parameters are passed to =cl:defpackage= as is..
       ',(mapcar (lambda (a) (intern (string a) (or (find-package name) (make-package name))))
 		(mapcar #'symbol-name (cdr (assoc :sections defs)))))))
 
-(define-section @export
-  "Export documentation to org mode. The structure is:
-- package has sections (in org)
-- sections refer to functions and other source items
-- function has documentation
+(define-section @export-internal
+  "The interface to Emacs lisp is EXPORT-SECTION-TO-ORG (lisp function) that is
+called from ORG-DBLOCK-WRITE:LISP-FNS-DOC (emacs function) using
+Sly (replacement with Slime should be trivial)
 
-*Security note*: The text from docstrings is considered to be already
-in org mode and inserted verbatim. This means that if you export
-documentation from a package someone else wrote documentation for, *and*
-have unsafe org mode settings, *and* open output in the emacs, you may
-get surprises."
-  (export-pkg-to-org))
+The conversion to org is done with EXPORT-ITEM-TO-ORG that can be enhanced to
+handle additional types; currently supported are: function (implicit), variable,
+type, class, condition, generic-fn and macro. The first few are symbols in CL
+package; the last two aresymbols in this package and are imported
+them implicitly in modified DEFPACKAGE.
 
-(defun export-fn-to-org (out fn &optional (type 'function))
-  "Print out function documentation as a level 3 section."
+
+The conversion to org is done with EXPORT-ITEM-TO-ORG that can be enhanced."
+  (export-item-to-org)
+  (export-section-to-org))
+
+(defun export-item-to-org (out fn &optional (type 'function) docstring)
+  "Print out item of type TYPE documentation as a list item.
+
+In general, the docstring (either explicitly provided or from DOCUMENTATION) is
+printed; for specific types, additional information such as lambda parameters
+list (for functions) or slot and parents info (for classes) is provided"
   (let ((doc-type ; as accepted by documentation
           (case type
             ((class condition) 'type)
@@ -92,7 +95,7 @@ get surprises."
             (t type))))
     (format out "- =~a= (~(~a~))~%" fn type)
     (pprint-logical-block (out nil :per-line-prefix "   ")
-      (format out "~@[~a~&~]" (documentation fn doc-type))
+      (format out "~@[~a~&~]" (or docstring (documentation fn doc-type)))
 
       (when (eql doc-type 'function)
         (format out "~&~@<Lambda list: ~;~{~~~s~~~^ ~:_~}~:>~%"
@@ -117,26 +120,7 @@ get surprises."
   "Print section and its functions in the org format to the stream."
   (format out "~a~2&" (documentation fn 'function))
   (dolist (e (get fn 'exports))
-    (apply 'export-fn-to-org out e)))
-
-(defun export-pkg-to-org (&key (pkg *package*)
-			      (package-name (package-name pkg))
-			    (file (format nil "~a.org" package-name)))
-  "Export package documentation to a file.
-Package documentation consists of:
-- Package documentation string
-- Sections referenced in the package :section definition
-- Objects referenced in the section definition.
-
-PACKAGE-NAME is used in text and as default for the file name."
-
-  (with-open-file (out file :direction :output :if-exists :supersede)
-    (format out "#+options: toc:t~%* ~a ~60t:package:~%~a~2%" package-name
-	    (documentation pkg t))
-    (dolist (sect (getf *package-sections*
-			;; we need canonical name below, not provided one
-			(intern (package-name pkg) 'cz.zellerin.doc)))
-      (export-section-to-org out (intern (string-upcase sect))))))
+    (apply 'export-item-to-org out e)))
 
 (defmacro export-classes ((&rest what) &body body)
   "Export names of classes, slot accessor functions and optionaly slot names (if WHAT contains :slots)."
