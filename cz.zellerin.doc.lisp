@@ -36,7 +36,7 @@ The place to jump from is the package definition. Standard
 =cl:defpackage= is replaced with =defpackage= that expects section
 names on the input, and passes exported functions from the
 =define-section= to the CL version. Elisp function
-`sly-edit-current-package' is provided to jump to the package
+~SLY-EDIT-SECTION~ is provided to jump to the package
 definition.
 
 The documentation strings are expected to be more or less org mode

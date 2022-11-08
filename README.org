@@ -1,23 +1,29 @@
 * Documenting Lisp code for easier reading
-MGL-PAX style documentation utilities, with these differencies:
+[[https://github.com/melisgl/mgl-pax][MGL-PAX]] style documentation utilities, with these differencies:
 - Sly, not Slime
 - Don't export, update dynamic blocks
 - Org mode, not Markdown.
+- less functionality, less automated text formatting, less dependencies
 
 
 ** Writing documentation
  #+BEGIN: lisp-fns-doc :package cz.zellerin.doc :section cz.zellerin.doc::@annotate
- The idea is that apart from package and code, the author defines
- sections that verbally describes some block of functionality and lists
- interface functions and variables. These are also by default exported,
- see below.
+ MGL-PAX style documentation utilities.
+
+ The idea is that apart from package and code, the author defines sections that
+ verbally describes some block of functionality and lists interface functions,
+ variables and other stuff (``items''). These are also by default exported, see
+ below.
 
  The sections are defined by DEFINE-SECTION as a function and can be
  jumped to using standard editor shortcut (=M-.=) from their names.
 
- The place to jump from is the package definition. Standard =cl:defpackage= is
- replaced with =defpackage= that passes exported functions from the =define-section=
- to the CL version.
+ The place to jump from is the package definition. Standard
+ =cl:defpackage= is replaced with =defpackage= that expects section
+ names on the input, and passes exported functions from the
+ =define-section= to the CL version. Elisp function
+ ~SLY-EDIT-SECTION~ is provided to jump to the package
+ definition.
 
  The documentation strings are expected to be more or less org mode
  format. Using poporg-mode (and binding it to =C-"=) makes it easier both
@@ -32,14 +38,12 @@ MGL-PAX style documentation utilities, with these differencies:
     Lambda list: ~NAME~ ~DOCSTRING~ ~&REST~ ~CONTENT~
 
  - =DEFPACKAGE= (function)
-    Defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
-    - It expects =:sections= option on the input, and stores its value as
-      list of sections that document the package
+    CL:defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
     - The =:export= option is not expected, and is replaced by the currently
       known list of already exported symbols from the package, if the
       package already existed, or left empty otherwise. The idea is that
       sections define what is exported.
-    - define-section symbol from the doc package is imported.
+    - define-section and related symbol from the doc package are imported.
     All other parameters are passed to =cl:defpackage= as is.
 
     Lambda list: ~NAME~ ~&BODY~ ~DEFS~
@@ -51,7 +55,7 @@ MGL-PAX style documentation utilities, with these differencies:
 
    Documentation can be used in the org mode. The supported setup is that package
  sections can be referred to in the org mode as [[info:org#Dynamic Blocks][dynamic blocks]]; they are normally
- inserted by `C-x C-x x lisp-doc` and updated by C-c C-x C-u.
+ inserted by ~C-x C-x x lisp-doc~ and updated by ~C-c C-x C-u~.
 
  The dynamic block inserts section documentation, and then documentation to the
  inserted objects.
@@ -67,7 +71,7 @@ MGL-PAX style documentation utilities, with these differencies:
 
  #+END:
 
-Actually, Dynamic Blocks interface is provided also for Emacs functions, with just list of functions to document.
+Actually, dynamic blocks interface is provided also for Emacs functions, with just list of functions to document.
 
 ** Internals
  #+BEGIN: lisp-fns-doc :package cz.zellerin.doc :section cz.zellerin.doc::@export-internal
