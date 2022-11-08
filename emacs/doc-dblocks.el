@@ -40,12 +40,14 @@ sections in current Sly package are offered for completition."
 (defun org-dblock-create-lisp-block (package section)
   "Create a dblock documenting a function."
   (interactive
-   (list
-    (completing-read "Package: "
-                     (mapcar 'downcase
-                             (sly-eval '(cl:mapcar
-                                         'cl:package-name (cl:list-all-packages)))))
-    (completing-read "Section: " (sly-package-sections package)))))
+   (let ((p
+          (completing-read "Package: "
+                           (mapcar 'downcase
+                                   (sly-eval '(cl:mapcar
+                                               'cl:package-name (cl:list-all-packages)))))))
+     (completing-read "Section: " (sly-package-sections p))))
+  (insert "#+BEGIN: lisp-fns-doc :package " package " :section " section
+          "\n#+END:"))
 
 
 ;;;###autoload
