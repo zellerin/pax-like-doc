@@ -98,7 +98,7 @@ list (for functions) or slot and parents info (for classes) is provided"
       (format out "~@[~a~&~]" (or docstring (documentation fn doc-type)))
 
       (when (eql doc-type 'function)
-        (format out "~&~@<Lambda list: ~;~{~~~s~~~^ ~:_~}~:>~%"
+        (format out "~&Lambda list: ~%~<  : ~@;~@{~s~^ ~:_~}~:@>~%"
                 (sb-introspect:function-lambda-list fn)))
 
       (when (eql type 'class)
@@ -107,7 +107,7 @@ list (for functions) or slot and parents info (for classes) is provided"
             ;; closer-mop: ensure-finalized
             (unless (sb-mop:class-finalized-p class)
               (sb-mop:finalize-inheritance class))
-            (format out "~&  Superclasses: ~s~%"
+            (format out "~&  Superclasses:~%~<  : ~@;~@{~s~^ ~:_~}~:@>~%"
                     (mapcar #'class-name (sb-mop:class-direct-superclasses class)))
             (dolist (slot (sb-mop:class-direct-slots class))
               (when (documentation slot t)

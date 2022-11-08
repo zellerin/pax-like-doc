@@ -22,7 +22,7 @@
  =cl:defpackage= is replaced with =defpackage= that expects section
  names on the input, and passes exported functions from the
  =define-section= to the CL version. Elisp function
- ~SLY-EDIT-SECTION~ is provided to jump to the package
+ `sly-edit-current-package' is provided to jump to the package
  definition.
 
  The documentation strings are expected to be more or less org mode
@@ -35,7 +35,8 @@
 
     The objects are exported as a side effect.
 
-    Lambda list: ~NAME~ ~DOCSTRING~ ~&REST~ ~CONTENT~
+    Lambda list:
+      : NAME DOCSTRING &REST CONTENT
 
  - =DEFPACKAGE= (function)
     CL:defpackage replacement. The format is same as for `cl:defpackage' with two exceptions:
@@ -46,7 +47,8 @@
     - define-section and related symbol from the doc package are imported.
     All other parameters are passed to =cl:defpackage= as is.
 
-    Lambda list: ~NAME~ ~&BODY~ ~DEFS~
+    Lambda list:
+      : NAME &BODY DEFS
 
 
  #+END:
@@ -55,7 +57,7 @@
 
    Documentation can be used in the org mode. The supported setup is that package
  sections can be referred to in the org mode as [[info:org#Dynamic Blocks][dynamic blocks]]; they are normally
- inserted by ~C-x C-x x lisp-doc~ and updated by ~C-c C-x C-u~.
+ inserted by ~C-c C-x x lisp-doc~ and updated by ~C-c C-x C-u~.
 
  The dynamic block inserts section documentation, and then documentation to the
  inserted objects.
@@ -89,18 +91,20 @@ Actually, dynamic blocks interface is provided also for Emacs functions, with ju
  The conversion to org is done with EXPORT-ITEM-TO-ORG that can be enhanced.
 
  - =EXPORT-ITEM-TO-ORG= (function)
-    Print out item of type TYPE documentation as a list item.
+    Print out item of type ~TYPE~ documentation as a list item.
 
-    In general, the docstring (either explicitly provided or from DOCUMENTATION) is
+    In general, the docstring (either explicitly provided or from ~DOCUMENTATION~) is
     printed; for specific types, additional information such as lambda parameters
     list (for functions) or slot and parents info (for classes) is provided
 
-    Lambda list: ~OUT~ ~FN~ ~&OPTIONAL~ ~(TYPE 'FUNCTION)~ ~DOCSTRING~
+    Lambda list:
+      : OUT FN &OPTIONAL (TYPE 'FUNCTION) DOCSTRING
 
  - =EXPORT-SECTION-TO-ORG= (function)
     Print section and its functions in the org format to the stream.
 
-    Lambda list: ~OUT~ ~FN~
+    Lambda list:
+      : OUT FN
 
 
  #+END:
