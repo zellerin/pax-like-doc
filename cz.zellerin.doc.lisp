@@ -82,6 +82,26 @@ The conversion to org is done with EXPORT-ITEM-TO-ORG that can be enhanced."
   (export-item-to-org)
   (export-section-to-org))
 
+(defparameter *decorate-exceptions* '("HTTP2" "TLS"))
+
+(defun decorate-symbol (target-string start end match-start match-end
+                        reg-start reg-end)
+  (declare (ignorable start end match-end match-start))
+  (let ((symbol-name (subseq target-string (aref reg-start 0)
+                             (aref reg-end 0))))
+    (if (member symbol-name *decorate-exceptions* :test #'string-equal)
+        symbol-name
+        (multiple-value-bind (symbol status) (find-symbol symbol-name)
+          (cond
+            ((null symbol) symbol-name)
+            #+nil              ((eq status :external) (format nil "[[~~~a~~]]" symbol-name))
+            #+nil((eq status :internal) (format nil "~~~a~~ (internal)" symbol-name))
+            (t (format nil "~~~a~~" symbol-name))
+            )))))
+
+(defun decorate-docstring (docstring)
+  (cl-ppcre:regex-replace-all "\\b([-A-Z0-9*)(]{3,})\\b" docstring 'decorate-symbol))
+
 (defun export-item-to-org (out fn &optional (type 'function) docstring)
   "Print out item of type TYPE documentation as a list item.
 
@@ -95,7 +115,8 @@ list (for functions) or slot and parents info (for classes) is provided"
             (t type))))
     (format out "- =~a= (~(~a~))~%" fn type)
     (pprint-logical-block (out nil :per-line-prefix "   ")
-      (format out "~@[~a~&~]" (or docstring (documentation fn doc-type)))
+      (format out "~@[~a~&~]" (decorate-docstring
+                               (or docstring (documentation fn doc-type))))
 
       (when (eql doc-type 'function)
         (format out "~&Lambda list: ~%~<  : ~@;~@{~s~^ ~:_~}~:@>~%"

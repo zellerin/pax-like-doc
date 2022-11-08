@@ -5,7 +5,7 @@
   :author "zellerin@gmail.com"
   :license  "Public domain"
   :version "1"
-  :depends-on ("let-over-lambda")
+  :depends-on ("let-over-lambda" "cl-ppcre")
   :components ((:file "package")
                (:file "cz.zellerin.doc"))
   :in-order-to ((test-op (test-op "cz.zellerin.doc/test"))))
