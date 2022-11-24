@@ -45,7 +45,7 @@ sections in current Sly package are offered for completition."
                            (mapcar 'downcase
                                    (sly-eval '(cl:mapcar
                                                'cl:package-name (cl:list-all-packages)))))))
-     (completing-read "Section: " (sly-package-sections p))))
+     (list p (completing-read "Section: " (sly-package-sections p)))))
   (insert "#+BEGIN: lisp-fns-doc :package " package " :section " section
           "\n#+END:"))
 
