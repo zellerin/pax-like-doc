@@ -91,13 +91,12 @@ The conversion to org is done with EXPORT-ITEM-TO-ORG that can be enhanced."
                              (aref reg-end 0))))
     (if (member symbol-name *decorate-exceptions* :test #'string-equal)
         symbol-name
-        (multiple-value-bind (symbol status) (find-symbol symbol-name)
-          (cond
-            ((null symbol) symbol-name)
-            #+nil              ((eq status :external) (format nil "[[~~~a~~]]" symbol-name))
-            #+nil((eq status :internal) (format nil "~~~a~~ (internal)" symbol-name))
-            (t (format nil "~~~a~~" symbol-name))
-            )))))
+        (cond
+          ((null (find-symbol symbol-name)) symbol-name)
+          #+nil              ((eq status :external) (format nil "[[~~~a~~]]" symbol-name))
+          #+nil((eq status :internal) (format nil "~~~a~~ (internal)" symbol-name))
+          (t (format nil "~~~a~~" symbol-name))
+          ))))
 
 (defun decorate-docstring (docstring)
   (cl-ppcre:regex-replace-all "\\b([-A-Z0-9*)(]{3,})\\b" docstring 'decorate-symbol))
