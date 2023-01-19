@@ -167,8 +167,84 @@ list (for functions) or slot and parents info (for classes) is provided"
   (*package-sections* variable)
   (update-readme))
 
-(defun update-readme ()
-  "Update readme file for the package. Intended to be run after
-  sly-mrepl-sync, when both =*package*= and directory are synchronized."
-  (export-pkg-to-org :pkg *package* :file "README.org"
-		     :package-name "doc"))
+(define-section @code-cleanup
+  "Macro to mark code to clean up and related machinery.
+
+The cleanups are stored in *CLEANUP-NEEDED* as objects that can be DESCRIBEd.
+
+In Emacs, new cleanup with default can be added with ~M-x add-cleanup~"
+  (with-code-cleanup-needed macro)
+  (*use-critic* variable)
+  (*cleanup-types* variable))
+
+(defclass cleanup-info ()
+  ((objects   :accessor get-objects   :initarg :objects)
+   (docstring :accessor get-docstring :initarg :docstring)
+   (file      :accessor get-file      :initarg :file)
+   (cleanups  :accessor get-cleanups  :initarg :cleanups)))
+
+(defvar *cleanup-needed*
+  "List of needed cleanups derived from the WITH-CODE-CLEANUP-NEEDED macro calls.")
+
+(defvar *use-critic* t
+  "If set, use LISP-CRITIC (with modified baseline) to assess the code during
+compilation.")
+
+(defvar *cleanup-types*
+  '(:add-or-fix-tests "Add new or fix broken tests"
+    :document-in-code "Document the code in docstrings etc"
+    :export-needed "Export whatever part of the code should be exported (by adding to possibly new sections)"
+    :fix-readme-documentation "Fix README if applicable"
+    :check-function-names "Check if function and variable names align with their internals"
+    :use-or-factor-utilities "Should we use existing utilities or define new?"
+    :use-objects "Replace list and assocs with structures"
+    :think-exceptions "Consider whether exceptions should be generated or restarts provided."
+    :simplify "Simplify code and check it with linkers.")
+  "List of cleanup codes and suggestions.")
+
+(defun extract-definitions-from-code (code)
+  "Extract pairs (object-name object-type) from the code."
+  (loop for block in code
+        for type = (when (consp block)
+                     (case (car block)
+                       ((defvar defparameter) 'variable)
+                       (defmacro 'macro)
+                       (defun 'function)
+                       (defclass 'type)))
+        when type
+          collect (list (second block) type)))
+
+(defmacro with-code-cleanup-needed (cleanup-name what-cleanup &body BODY)
+  "Evaluate or compile BODY normally. The macro is to visually mark areas that need
+some cleanup.
+
+What cleanup is needed is marked by WHAT-CLEANUP. That is a list consisting of
+keywords that refer, among other, to these issues:
+- :add-or-fix-tests :: Add new or fix broken tests
+- :document-in-code :: Document the code in docstrings etc
+- :export-needed :: Export whatever part of the code should be exported (by
+  adding to possibly new sections)
+- :fix-readme-documentation :: Fix README if applicable
+- :check-function-names :: Check if function and variable names align with their internals
+- :use-or-factor-utilities :: Should we use existing utilities or define new?
+- :use-objects :: Replace list and assocs with structures
+- :think-exceptions :: Consider whether exceptions should be generated or restarts provided.
+- :simplify :: simplify code and check it with linters."
+  `(progn
+     (setf (getf *cleanup-needed* ',cleanup-name)
+           (make-instance 'cleanup-info
+                          :objects (extract-definitions-from-code ',body)
+                          :docstring (when (stringp ,(car body)) ,(car body))
+                          :file *compile-file-pathname*
+                          :cleanups ',what-cleanup))
+     (when ,(find :simplify what-cleanup)
+       (dolist (item ',body)
+         (when (and (consp item) (cdr item))
+           (print (subseq item 0 2)))
+         (uiop:symbol-call :lisp-critic :critique-definition item)))
+     ,@body))
+
+(defmethod describe-object ((cleanup cleanup-info) stream)
+  (format t "For ~a,: ~%~{~a~%~}" (get-objects cleanup)
+          (mapcar (lambda (a) (getf *cleanup-types* a))
+                  (get-cleanups cleanup))))

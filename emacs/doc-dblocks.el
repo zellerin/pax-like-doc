@@ -66,3 +66,7 @@ sections in current Sly package are offered for completition."
         (cl:let ((cl:*package* (cl:find-package ',(plist-get params :package))))
            (cz.zellerin.doc:export-section-to-org s
               ',(plist-get params :section)))))))
+
+
+(org-link-set-parameters "sly"
+                         :follow (lambda (a) (sly-edit-definition a)))
