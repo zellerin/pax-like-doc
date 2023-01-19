@@ -79,9 +79,10 @@ Actually, dynamic blocks interface is provided also for Emacs functions, with ju
 #+BEGIN: lisp-fns-doc :package cz.zellerin.doc :section cz.zellerin.doc::@code-cleanup
 Macro to mark code to clean up and related machinery.
 
-The cleanups are stored in *CLEANUP-NEEDED* as objects that can be DESCRIBEd.
+The cleanups are stored in ~*CLEANUP-NEEDED*~ as objects that can be DESCRIBEd.
 
-In Emacs, new cleanup with default can be added with ~M-x add-cleanup~
+If the attached emacs definitions are loaded, new cleanup with default can be
+added with ~M-x add-cleanup~
 
 - =WITH-CODE-CLEANUP-NEEDED= (macro)
    Evaluate or compile ~BODY~ normally. The macro is to visually mark areas that need
@@ -90,7 +91,6 @@ In Emacs, new cleanup with default can be added with ~M-x add-cleanup~
    What cleanup is needed is marked by ~WHAT-CLEANUP~. That is a list consisting of
    keywords that refer, among other, to these issues:
    - :add-or-fix-tests :: Add new or fix broken tests
-   - :document-in-code :: Document the code in docstrings etc
    - :export-needed :: Export whatever part of the code should be exported (by
      adding to possibly new sections)
    - :fix-readme-documentation :: Fix README if applicable
@@ -100,12 +100,18 @@ In Emacs, new cleanup with default can be added with ~M-x add-cleanup~
    - :think-exceptions :: Consider whether exceptions should be generated or restarts provided.
    - :simplify :: simplify code and check it with linters.
 
+   Check the body with Lisp-critic if ~*USE-CRITIC*~ is set.
+
    Lambda list:
      : CLEANUP-NAME WHAT-CLEANUP &BODY BODY
 
-- =*USE-CRITIC*= (variable)
-   If set, use LISP-CRITIC (with modified baseline) to assess the code during
-   compilation.
+- =USE-LISP-CRITIC= (function)
+   Load lisp-critic and make sure it is used by the ~WITH-CODE-CLEANUP-NEEDED~ macro.
+
+   Lambda list:
+     :
+
+- =*CLEANUP-NEEDED*= (variable)
 
 - =*CLEANUP-TYPES*= (variable)
    List of cleanup codes and suggestions.

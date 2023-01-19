@@ -169,11 +169,13 @@ list (for functions) or slot and parents info (for classes) is provided"
 (define-section @code-cleanup
   "Macro to mark code to clean up and related machinery.
 
-The cleanups are stored in *CLEANUP-NEEDED* as objects that can be DESCRIBEd.
+The cleanups are stored in ~*CLEANUP-NEEDED*~ as objects that can be DESCRIBEd.
 
-In Emacs, new cleanup with default can be added with ~M-x add-cleanup~"
+If the attached emacs definitions are loaded, new cleanup with default can be
+added with ~M-x add-cleanup~"
   (with-code-cleanup-needed macro)
-  (*use-critic* variable)
+  (use-lisp-critic)
+  (*cleanup-needed* variable)
   (*cleanup-types* variable))
 
 (defclass cleanup-info ()
@@ -183,11 +185,16 @@ In Emacs, new cleanup with default can be added with ~M-x add-cleanup~"
    (cleanups  :accessor get-cleanups  :initarg :cleanups)))
 
 (defvar *cleanup-needed*
-  "List of needed cleanups derived from the WITH-CODE-CLEANUP-NEEDED macro calls.")
+  "List of needed cleanups derived from the /WITH-CODE-CLEANUP-NEEDED/ macro calls.")
 
-(defvar *use-critic* t
+(defvar *use-critic* nil
   "If set, use LISP-CRITIC (with modified baseline) to assess the code during
 compilation.")
+
+(defun use-lisp-critic ()
+  "Load lisp-critic and make sure it is used by the WITH-CODE-CLEANUP-NEEDED macro."
+  (setf *use-critic* t)
+  (ql:quickload 'lisp-critic))
 
 (defvar *cleanup-types*
   '(:add-or-fix-tests "Add new or fix broken tests"
@@ -220,7 +227,6 @@ some cleanup.
 What cleanup is needed is marked by WHAT-CLEANUP. That is a list consisting of
 keywords that refer, among other, to these issues:
 - :add-or-fix-tests :: Add new or fix broken tests
-- :document-in-code :: Document the code in docstrings etc
 - :export-needed :: Export whatever part of the code should be exported (by
   adding to possibly new sections)
 - :fix-readme-documentation :: Fix README if applicable
@@ -228,7 +234,9 @@ keywords that refer, among other, to these issues:
 - :use-or-factor-utilities :: Should we use existing utilities or define new?
 - :use-objects :: Replace list and assocs with structures
 - :think-exceptions :: Consider whether exceptions should be generated or restarts provided.
-- :simplify :: simplify code and check it with linters."
+- :simplify :: simplify code and check it with linters.
+
+Check the body with Lisp-critic if ~*USE-CRITIC*~ is set."
   `(progn
      (setf (getf *cleanup-needed* ',cleanup-name)
            (make-instance 'cleanup-info
@@ -236,7 +244,7 @@ keywords that refer, among other, to these issues:
                           :docstring (when (stringp ,(car body)) ,(car body))
                           :file *compile-file-pathname*
                           :cleanups ',what-cleanup))
-     (when ,(find :simplify what-cleanup)
+     (when *use-critic*
        (dolist (item ',body)
          (when (and (consp item) (cdr item))
            (print (subseq item 0 2)))
