@@ -184,7 +184,7 @@ added with ~M-x add-cleanup~"
    (file      :accessor get-file      :initarg :file)
    (cleanups  :accessor get-cleanups  :initarg :cleanups)))
 
-(defvar *cleanup-needed*
+(defvar *cleanup-needed* nil
   "List of needed cleanups derived from the /WITH-CODE-CLEANUP-NEEDED/ macro calls.")
 
 (defvar *use-critic* nil
@@ -205,7 +205,8 @@ compilation.")
     :use-or-factor-utilities "Should we use existing utilities or define new?"
     :use-objects "Replace list and assocs with structures"
     :think-exceptions "Consider whether exceptions should be generated or restarts provided."
-    :simplify "Simplify code and check it with linkers.")
+    :simplify "Simplify code and check it with linkers."
+    :no-private-data "Remove any private hardcoded data (URL, username, passwords)")
   "List of cleanup codes and suggestions.")
 
 (defun extract-definitions-from-code (code)

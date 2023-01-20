@@ -8,4 +8,5 @@
                                     :use-or-factor-utilities
                                     :use-objects
                                     :think-exceptions
-                                    :simplify))")
+                                    :simplify
+                                    :no-private-data))")
