@@ -67,7 +67,14 @@
  package someone else wrote documentation for, *and* have unsafe org mode settings,
  *and* open output in the emacs, you may get surprises.
 
- #+BEGIN: elisp-fns-doc :fns (sly-edit-section )
+ #+BEGIN: elisp-fns-doc :group tz-doc
+ - [[help:org-dblock-write:elisp-fns-doc][org-dblock-write:elisp-fns-doc]] :: =fn=  Write documentation from the elisp-fns-doc.
+
+   Used headers:
+   - :short-doc-group to describe a group defined by DEFINE-SHORT-DOCUMENTATION-GROUP
+   - :symbols for a list of symbols to describe
+   - :custom-group for a customization group
+   - :group when :custom-group and short-doc-group are same
  - [[help:sly-edit-section][sly-edit-section]] :: =cmd=  Jump to SECTION definition. If called interactively, the
    sections in current Sly package are offered for completition.
 
