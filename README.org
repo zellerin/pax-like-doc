@@ -1,3 +1,5 @@
+*Note: This is no longer in used/maintained. I switched to mgl-pax*.
+
 * Documenting Lisp code for easier reading
 [[https://github.com/melisgl/mgl-pax][MGL-PAX]] style documentation utilities, with these differencies:
 - Sly, not Slime
